@@ -1,7 +1,7 @@
 #[derive(Clone, Debug, PartialEq)]
 pub enum ErrorKind {
-  InvalidChar(usize, char),
-  MissingCharacter(usize, char),
+  InvalidChar((usize, usize), char),
+  MissingCharacter((usize, usize), char),
   Unparsable,
   Unexpected
 }
