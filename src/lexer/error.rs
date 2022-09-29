@@ -12,7 +12,9 @@ pub struct Error {
 }
 
 impl Error {
-  pub fn kind(kind: ErrorKind) -> Self {
-    Self { kind }
+  pub fn from_kind(kind: ErrorKind) -> Self {
+    Self {
+      kind
+    }
   }
 }

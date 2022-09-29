@@ -1,33 +1,34 @@
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenKind<'v> {
   // Sigils
-  OpenBrace, // [
-  CloseBrace, // ]
-  OpenBracket, // {
+  OpenBrace,    // [
+  CloseBrace,   // ]
+  OpenBracket,  // {
   CloseBracket, // }
-  OpenParen, // (
-  CloseParen, // )
-  Semicolon, // ;
-  Comma, // ,
-  Dot, // .
-  Plus, // +
-  Minus, // -
-  Star, // *
-  Slash, // /
-  Not, // !
-  NotEqual, // !=
-  Equal, // =
-  Equals, // ==
-  Greater, // >
+  OpenParen,    // (
+  CloseParen,   // )
+  Semicolon,    // ;
+  Comma,        // ,
+  Dot,          // .
+  Plus,         // +
+  Minus,        // -
+  Star,         // *
+  Slash,        // /
+  Not,          // !
+  NotEqual,     // !=
+  Equal,        // =
+  Equals,       // ==
+  Greater,      // >
   GreaterEqual, // >=
-  Less, // <
-  LessEqual, // <=
-  Amp, // &
-  And, // &&
-  Pipe, // |
-  Or, // ||
+  Less,         // <
+  LessEqual,    // <=
+  Amp,          // &
+  And,          // &&
+  Pipe,         // |
+  Or,           // ||
 
-  Arrow, // ->
+  Arrow,   // ->
+  NewLine, // \n
 
   // Literals
   ID(&'v str),
@@ -50,15 +51,21 @@ pub struct Token<'i> {
 
 impl<'i> Token<'i> {
   pub fn new(kind: TokenKind<'i>, pos: usize, len: usize) -> Self {
-    Self { kind, pos, len }
+    Self {
+      kind,
+      pos,
+      len
+    }
   }
 
   pub fn kind(&self) -> &TokenKind<'i> {
     &self.kind
   }
+
   pub fn pos(&self) -> usize {
     self.pos
   }
+
   pub fn len(&self) -> usize {
     self.len
   }
