@@ -96,10 +96,28 @@ impl<'i> Parser<'i> {
 
     self.eat(token::TokenKind::Equal)?;
 
-    Ok(ast::Stmt::Declaration(
-      name.to_string(),
-      self.collect_expr()?
-    ))
+    let value = self.collect_expr()?;
+    self.bump();
+
+    Ok(ast::Stmt::Declaration(name.to_string(), value))
+  }
+
+  fn collect_var_assignment(&mut self) -> Result<'i, ast::Expr> {
+    let name = match self.current_token {
+      Some(token) => match token?.kind() {
+        &token::TokenKind::ID(name) => name,
+        _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
+      },
+      None => return self.generate_expected(token::TokenKind::ID("abc"))
+    };
+    self.bump();
+
+    self.eat(token::TokenKind::Equal)?;
+
+    let value = self.collect_expr()?;
+    self.bump();
+
+    Ok(ast::Expr::Assign(name.to_string(), Box::new(value)))
   }
 
   fn collect_fn_decl(&mut self) -> Result<'i, ast::Stmt> {
@@ -165,15 +183,25 @@ impl<'i> Parser<'i> {
   }
 
   fn collect_expr(&mut self) -> Result<'i, ast::Expr> {
-    let expr = match self.current_token {
+    let left = match self.current_token {
       Some(token) => match token?.kind() {
         &token::TokenKind::Char(v) => ast::Expr::CharLiteral(v.to_string()),
         &token::TokenKind::String(v) => ast::Expr::StringLiteral(v.to_string()),
         &token::TokenKind::Int(v) => ast::Expr::IntLiteral(v),
         &token::TokenKind::Float(v) => ast::Expr::FloatLiteral(v),
         &token::TokenKind::ID(name) => match self.lookahead_token {
-          Some(Ok(token)) => ast::Expr::None,
+          Some(next_token) => match next_token?.kind() {
+            &token::TokenKind::Equal => self.collect_var_assignment()?,
+            _ => ast::Expr::Identifier(name.to_string())
+          },
           _ => ast::Expr::Identifier(name.to_string())
+        },
+        &token::TokenKind::OpenParen => {
+          self.bump();
+          let expr = self.collect_expr()?;
+          self.eat(token::TokenKind::CloseParen);
+          self.bump();
+          expr
         },
 
         _ => ast::Expr::None
@@ -181,9 +209,35 @@ impl<'i> Parser<'i> {
       None => ast::Expr::None
     };
 
-    self.bump();
+    let right = match self.lookahead_token {
+      Some(token) => match token?.kind() {
+        &token::TokenKind::Plus
+        | &token::TokenKind::Minus
+        | &token::TokenKind::Star
+        | &token::TokenKind::Slash
+        | &token::TokenKind::NotEqual
+        | &token::TokenKind::Equal
+        | &token::TokenKind::Equals
+        | &token::TokenKind::Greater
+        | &token::TokenKind::GreaterEqual
+        | &token::TokenKind::Less
+        | &token::TokenKind::LessEqual
+        | &token::TokenKind::Amp
+        | &token::TokenKind::And
+        | &token::TokenKind::Pipe
+        | &token::TokenKind::Or => {
+          self.bump();
+          self.collect_binary_op()?
+        },
+        _ => None
+      },
+      None => None
+    };
 
-    Ok(expr)
+    match right {
+      Some((op, right)) => Ok(ast::Expr::BinaryOp(op, Box::new(left), Box::new(right))),
+      None => Ok(left)
+    }
   }
 
   fn collect_block(&mut self) -> Result<'i, ast::Expr> {
@@ -207,6 +261,32 @@ impl<'i> Parser<'i> {
     self.eat(token::TokenKind::CloseBrace)?;
 
     Ok(ast::Expr::Block(list))
+  }
+
+  fn collect_binary_op(&mut self) -> Result<'i, Option<(ast::BinaryOp, ast::Expr)>> {
+    let op = self.current_token;
+    self.bump();
+    match op {
+      Some(token) => match token?.kind() {
+        &token::TokenKind::Plus => Ok(Some((ast::BinaryOp::Add, self.collect_expr()?))),
+        &token::TokenKind::Minus => Ok(Some((ast::BinaryOp::Subtract, self.collect_expr()?))),
+        &token::TokenKind::Star => Ok(Some((ast::BinaryOp::Multiply, self.collect_expr()?))),
+        &token::TokenKind::Slash => Ok(Some((ast::BinaryOp::Divide, self.collect_expr()?))),
+        &token::TokenKind::NotEqual => Ok(Some((ast::BinaryOp::NotEquals, self.collect_expr()?))),
+        &token::TokenKind::Equals => Ok(Some((ast::BinaryOp::Equals, self.collect_expr()?))),
+        &token::TokenKind::Greater => Ok(Some((ast::BinaryOp::GreaterThan, self.collect_expr()?))),
+        &token::TokenKind::GreaterEqual =>
+          Ok(Some((ast::BinaryOp::GreaterEquals, self.collect_expr()?))),
+        &token::TokenKind::Less => Ok(Some((ast::BinaryOp::LessThan, self.collect_expr()?))),
+        &token::TokenKind::LessEqual => Ok(Some((ast::BinaryOp::LessEquals, self.collect_expr()?))),
+        &token::TokenKind::Amp => Ok(Some((ast::BinaryOp::BineryAnd, self.collect_expr()?))),
+        &token::TokenKind::And => Ok(Some((ast::BinaryOp::And, self.collect_expr()?))),
+        &token::TokenKind::Pipe => Ok(Some((ast::BinaryOp::BineryOr, self.collect_expr()?))),
+        &token::TokenKind::Or => Ok(Some((ast::BinaryOp::Or, self.collect_expr()?))),
+        _ => Ok(None)
+      },
+      None => Ok(None)
+    }
   }
 
   /// ERRORS

@@ -3,7 +3,9 @@ use std::collections::VecDeque;
 #[derive(Debug, PartialEq, Clone)]
 pub enum BinaryOp {
   And,
+  BineryAnd,
   Or,
+  BineryOr,
   Equals,
   NotEquals,
   GreaterThan,

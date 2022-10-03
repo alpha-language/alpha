@@ -8,11 +8,13 @@ mod parser;
 
 fn main() {
   let lexer = Lexer::new(
-    "/* */
-  fn main() {
-    return 0;
-  }
     "
+fn main () {
+  let a = 4;
+  let b = (5 + a) * 8;
+  c = 7;
+}
+  "
   );
   let mut p = Parser::new(lexer);
 
