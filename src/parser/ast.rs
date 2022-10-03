@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum BinaryOp {
   And,
@@ -22,8 +24,6 @@ pub enum UnaryOp {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expr {
-  Nil,
-
   Identifier(String),
   FloatLiteral(f64),
   IntLiteral(i64),
@@ -32,11 +32,14 @@ pub enum Expr {
   BooleanLiteral(bool),
 
   Assign(String, Box<Expr>),
-  Function(Vec<String>, Vec<Stmt>),
-  Call(Box<Expr>, Vec<Expr>),
+  Call(Box<Expr>, VecDeque<Expr>),
+  Closure(VecDeque<(String, String)>, VecDeque<Stmt>),
+  Block(VecDeque<Stmt>),
 
   UnaryOp(UnaryOp, Box<Expr>),
-  BinaryOp(BinaryOp, Box<Expr>, Box<Expr>)
+  BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
+
+  None
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -44,7 +47,8 @@ pub enum Stmt {
   Return(Expr),
   ExprStmt(Expr),
   Declaration(String, Expr),
-  If(Expr, Vec<Stmt>, Vec<Stmt>),
-  While(Expr, Vec<Stmt>),
-  Block(Vec<Stmt>)
+  If(Expr, VecDeque<Stmt>, VecDeque<Stmt>),
+  While(Expr, VecDeque<Stmt>),
+
+  None
 }

@@ -1,14 +1,13 @@
 use core::mem;
 use core::str::CharIndices;
 
-use self::error::{Error, ErrorKind};
+use crate::errors::{Error, ErrorKind, Result};
+
 use self::token::{Token, TokenKind};
 
-pub mod error;
 pub mod token;
 
 type CharIndice = Option<(usize, char)>;
-pub type LexerToken<'i> = Result<Token<'i>, Error>;
 
 pub struct Lexer<'i> {
   source: &'i str,
@@ -114,7 +113,7 @@ impl<'i> Lexer<'i> {
       .and_then(|i| self.source.get(start..i))
   }
 
-  fn collect_number(&mut self, start: usize) -> Result<Token<'i>, Error> {
+  fn collect_number(&mut self, start: usize) -> Result<'i, Token<'i>> {
     let end = self.skip_until(|ch, _, _| !(ch == '_' || ch.is_ascii_digit()));
 
     // Check if it's a decimal or a field access after the . char
@@ -145,7 +144,7 @@ impl<'i> Lexer<'i> {
 }
 
 impl<'i> Iterator for Lexer<'i> {
-  type Item = Result<Token<'i>, Error>;
+  type Item = Result<'i, Token<'i>>;
 
   fn next(&mut self) -> Option<Self::Item> {
     self.skip_whitespace();
@@ -157,6 +156,7 @@ impl<'i> Iterator for Lexer<'i> {
       Some((i, ')')) => Some(Ok(Token::new(TokenKind::CloseParen, i, 1))),
       Some((i, '[')) => Some(Ok(Token::new(TokenKind::OpenBracket, i, 1))),
       Some((i, ']')) => Some(Ok(Token::new(TokenKind::CloseBracket, i, 1))),
+      Some((i, ':')) => Some(Ok(Token::new(TokenKind::Colon, i, 1))),
       Some((i, ';')) => Some(Ok(Token::new(TokenKind::Semicolon, i, 1))),
       Some((i, ',')) => Some(Ok(Token::new(TokenKind::Comma, i, 1))),
       Some((i, '.')) => Some(Ok(Token::new(TokenKind::Dot, i, 1))),
@@ -271,6 +271,7 @@ impl<'i> Iterator for Lexer<'i> {
             Some((
               match id {
                 "fn" => TokenKind::Fn,
+                "let" => TokenKind::Let,
                 "return" => TokenKind::Return,
                 id => TokenKind::ID(id)
               },

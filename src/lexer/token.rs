@@ -1,13 +1,14 @@
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum TokenKind<'v> {
   // Sigils
-  OpenBrace,    // [
-  CloseBrace,   // ]
-  OpenBracket,  // {
-  CloseBracket, // }
+  OpenBrace,    // {
+  CloseBrace,   // }
+  OpenBracket,  // [
+  CloseBracket, // ]
   OpenParen,    // (
   CloseParen,   // )
   Semicolon,    // ;
+  Colon,        // ;
   Comma,        // ,
   Dot,          // .
   Plus,         // +
@@ -38,11 +39,12 @@ pub enum TokenKind<'v> {
   Float(f64),
 
   // Keywords
+  Let,
   Fn,
   Return
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Token<'i> {
   kind: TokenKind<'i>,
   pos: usize,
