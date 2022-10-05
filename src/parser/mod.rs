@@ -189,12 +189,10 @@ impl<'i> Parser<'i> {
 
   fn collect_expr(&mut self) -> Result<'i, ast::Expr> {
     match self.current_token {
-      Some(token) => {
-        match token?.kind() {
-          &token::TokenKind::OpenBrace => self.collect_block(),
-          _ => self.collect_comparator()
-        }
-      }
+      Some(token) => match token?.kind() {
+        &token::TokenKind::OpenBrace => self.collect_block(),
+        _ => self.collect_comparator()
+      },
       None => Ok(ast::Expr::None)
     }
   }
@@ -230,12 +228,20 @@ impl<'i> Parser<'i> {
         &token::TokenKind::Amp => {
           self.bump();
           self.eat(token::TokenKind::Amp)?;
-          ast::Expr::Op(ast::Op::BineryAnd, Box::new(expr), Box::new(self.collect_litteral()?))
+          ast::Expr::Op(
+            ast::Op::BineryAnd,
+            Box::new(expr),
+            Box::new(self.collect_litteral()?)
+          )
         },
         &token::TokenKind::Pipe => {
           self.bump();
           self.eat(token::TokenKind::Pipe)?;
-          ast::Expr::Op(ast::Op::BineryOr, Box::new(expr), Box::new(self.collect_litteral()?))
+          ast::Expr::Op(
+            ast::Op::BineryOr,
+            Box::new(expr),
+            Box::new(self.collect_litteral()?)
+          )
         },
         _ => break
       };
@@ -243,21 +249,29 @@ impl<'i> Parser<'i> {
 
     Ok(expr)
   }
-  
+
   fn collect_factor(&mut self) -> Result<'i, ast::Expr> {
     let mut expr = self.collect_binary()?;
-    
+
     while let Some(token) = self.lookahead_token {
       expr = match token?.kind() {
         &token::TokenKind::Star => {
           self.bump();
           self.eat(token::TokenKind::Star)?;
-          ast::Expr::Op(ast::Op::Multiply, Box::new(expr), Box::new(self.collect_binary()?))
+          ast::Expr::Op(
+            ast::Op::Multiply,
+            Box::new(expr),
+            Box::new(self.collect_binary()?)
+          )
         },
         &token::TokenKind::Slash => {
           self.bump();
           self.eat(token::TokenKind::Slash)?;
-          ast::Expr::Op(ast::Op::Divide, Box::new(expr), Box::new(self.collect_binary()?))
+          ast::Expr::Op(
+            ast::Op::Divide,
+            Box::new(expr),
+            Box::new(self.collect_binary()?)
+          )
         },
         _ => break
       };
@@ -265,7 +279,7 @@ impl<'i> Parser<'i> {
 
     Ok(expr)
   }
-  
+
   fn collect_term(&mut self) -> Result<'i, ast::Expr> {
     let mut expr = self.collect_factor()?;
 
@@ -274,12 +288,20 @@ impl<'i> Parser<'i> {
         &token::TokenKind::Plus => {
           self.bump();
           self.eat(token::TokenKind::Plus)?;
-          ast::Expr::Op(ast::Op::Add, Box::new(expr), Box::new(self.collect_factor()?))
+          ast::Expr::Op(
+            ast::Op::Add,
+            Box::new(expr),
+            Box::new(self.collect_factor()?)
+          )
         },
         &token::TokenKind::Minus => {
           self.bump();
           self.eat(token::TokenKind::Minus)?;
-          ast::Expr::Op(ast::Op::Subtract, Box::new(expr), Box::new(self.collect_factor()?))
+          ast::Expr::Op(
+            ast::Op::Subtract,
+            Box::new(expr),
+            Box::new(self.collect_factor()?)
+          )
         },
         _ => break
       };
@@ -296,32 +318,56 @@ impl<'i> Parser<'i> {
         &token::TokenKind::Equals => {
           self.bump();
           self.eat(token::TokenKind::Equals)?;
-          ast::Expr::Op(ast::Op::Equals, Box::new(expr), Box::new(self.collect_term()?))
+          ast::Expr::Op(
+            ast::Op::Equals,
+            Box::new(expr),
+            Box::new(self.collect_term()?)
+          )
         },
         &token::TokenKind::NotEqual => {
           self.bump();
           self.eat(token::TokenKind::NotEqual)?;
-          ast::Expr::Op(ast::Op::NotEquals, Box::new(expr), Box::new(self.collect_term()?))
+          ast::Expr::Op(
+            ast::Op::NotEquals,
+            Box::new(expr),
+            Box::new(self.collect_term()?)
+          )
         },
         &token::TokenKind::Greater => {
           self.bump();
           self.eat(token::TokenKind::Greater)?;
-          ast::Expr::Op(ast::Op::GreaterThan, Box::new(expr), Box::new(self.collect_term()?))
+          ast::Expr::Op(
+            ast::Op::GreaterThan,
+            Box::new(expr),
+            Box::new(self.collect_term()?)
+          )
         },
         &token::TokenKind::GreaterEqual => {
           self.bump();
           self.eat(token::TokenKind::GreaterEqual)?;
-          ast::Expr::Op(ast::Op::GreaterEquals, Box::new(expr), Box::new(self.collect_term()?))
+          ast::Expr::Op(
+            ast::Op::GreaterEquals,
+            Box::new(expr),
+            Box::new(self.collect_term()?)
+          )
         },
         &token::TokenKind::Less => {
           self.bump();
           self.eat(token::TokenKind::Less)?;
-          ast::Expr::Op(ast::Op::LessThan, Box::new(expr), Box::new(self.collect_term()?))
+          ast::Expr::Op(
+            ast::Op::LessThan,
+            Box::new(expr),
+            Box::new(self.collect_term()?)
+          )
         },
         &token::TokenKind::LessEqual => {
           self.bump();
           self.eat(token::TokenKind::LessEqual)?;
-          ast::Expr::Op(ast::Op::LessEquals, Box::new(expr), Box::new(self.collect_term()?))
+          ast::Expr::Op(
+            ast::Op::LessEquals,
+            Box::new(expr),
+            Box::new(self.collect_term()?)
+          )
         },
         &token::TokenKind::And => {
           self.bump();
