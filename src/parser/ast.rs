@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum BinaryOp {
+pub enum Op {
   And,
   BineryAnd,
   Or,
@@ -39,7 +39,7 @@ pub enum Expr {
   Block(VecDeque<Stmt>),
 
   UnaryOp(UnaryOp, Box<Expr>),
-  BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
+  Op(Op, Box<Expr>, Box<Expr>),
 
   None
 }
