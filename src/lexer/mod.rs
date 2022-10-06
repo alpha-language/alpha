@@ -5,6 +5,7 @@ use crate::errors::{Error, ErrorKind, Result};
 
 use self::token::{Token, TokenKind};
 
+mod tests;
 pub mod token;
 
 type CharIndice = Option<(usize, char)>;
@@ -69,16 +70,7 @@ impl<'i> Lexer<'i> {
       }
     }
 
-    match self.lookahead {
-      Some(_) => prev_char.and_then(|(i, ch)| {
-        if predicate(ch, None, None) {
-          Some(i + 1)
-        } else {
-          None
-        }
-      }),
-      None => prev_char.map(|(i, ch)| i + ch.len_utf8())
-    }
+    prev_char.map(|_| self.source.len())
   }
 
   fn skip_n(&mut self, n: usize) {
@@ -92,7 +84,7 @@ impl<'i> Lexer<'i> {
   }
 
   fn skip_to_endline(&mut self) {
-    self.skip_until(|_, _, lookahead| matches!(lookahead, Some((_, ch)) if ch == '\n'));
+    self.skip_until(|ch, _, _| ch == '\n');
   }
 
   fn skip_to_endcomment(&mut self) {
