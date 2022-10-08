@@ -13,10 +13,12 @@ type CharIndice = Option<(usize, char)>;
 pub struct Lexer<'i> {
   source: &'i str,
 
+  cursor: usize,
   line: usize,
   col: usize,
 
   chars: CharIndices<'i>,
+  previous: CharIndice,
   lookahead: CharIndice,
   lookahead2: CharIndice
 }
@@ -30,10 +32,12 @@ impl<'i> Lexer<'i> {
     Self {
       source,
 
+      cursor: 0,
       line: 1,
       col: 1,
 
       chars,
+      previous: None,
       lookahead,
       lookahead2
     }
@@ -46,6 +50,8 @@ impl<'i> Lexer<'i> {
     );
 
     if let Some((_, ch)) = curr {
+      self.previous = self.source.char_indices().nth(self.cursor);
+      self.cursor += 1;
       self.col += 1;
       if ch == '\n' {
         self.col = 1;
@@ -61,16 +67,15 @@ impl<'i> Lexer<'i> {
   where
     F: FnMut(char, CharIndice, CharIndice) -> bool
   {
-    let mut prev_char = None;
     while let Some((i, ch)) = self.lookahead {
-      if predicate(ch, prev_char, self.lookahead2) {
+      if predicate(ch, self.previous, self.lookahead2) {
         return Some(i)
       } else {
-        prev_char = self.bump();
+        self.bump();
       }
     }
 
-    prev_char.map(|_| self.source.len())
+    Some(self.source.len())
   }
 
   fn skip_n(&mut self, n: usize) {
