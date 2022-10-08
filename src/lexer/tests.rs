@@ -1,6 +1,8 @@
+#[allow(unused_imports)]
 use super::token::{Token, TokenKind};
 use super::Lexer;
 
+#[allow(dead_code)]
 fn lex(source: &str, expected: Vec<Token>) {
   let mut lexer = Lexer::new(source);
 
@@ -95,7 +97,6 @@ fn identifiers() {
   lex("id", vec![Token::new(TokenKind::ID("id"), 0, 2)]);
   lex("_id", vec![Token::new(TokenKind::ID("_id"), 0, 3)]);
   lex("id123", vec![Token::new(TokenKind::ID("id123"), 0, 5)]);
-  // lex("子", vec![Token::new(TokenKind::ID("子"), 0, 1)]);
 }
 
 #[test]
