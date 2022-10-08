@@ -77,7 +77,7 @@ impl<'i> Parser<'i> {
         token::TokenKind::Let => self.collect_var_def(),
         token::TokenKind::Fn => self.collect_fn_decl(),
         token::TokenKind::Return => {
-          self.bump();
+          self.eat(token::TokenKind::Return)?;
           Ok(ast::Stmt::Return(self.collect_expr()?))
         },
         _ => Ok(ast::Stmt::ExprStmt(self.collect_expr()?))
@@ -192,6 +192,20 @@ impl<'i> Parser<'i> {
     match self.current_token {
       Some(token) => match token?.kind() {
         &token::TokenKind::OpenBrace => self.collect_block(),
+        &token::TokenKind::Minus => {
+          self.eat(token::TokenKind::Minus)?;
+          Ok(ast::Expr::UnaryOp(
+            ast::UnaryOp::Negate,
+            Box::new(self.collect_expr()?)
+          ))
+        },
+        &token::TokenKind::Not => {
+          self.eat(token::TokenKind::Not)?;
+          Ok(ast::Expr::UnaryOp(
+            ast::UnaryOp::Not,
+            Box::new(self.collect_expr()?)
+          ))
+        },
         _ => self.collect_comparator()
       },
       None => Ok(ast::Expr::None)
@@ -402,7 +416,7 @@ impl<'i> Parser<'i> {
           _ => ast::Expr::Identifier(name.to_string())
         },
         &token::TokenKind::OpenParen => {
-          self.bump();
+          self.eat(token::TokenKind::OpenParen)?;
           let expr = self.collect_expr()?;
           self.bump();
           self.see(token::TokenKind::CloseParen)?;
