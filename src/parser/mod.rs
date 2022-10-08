@@ -65,7 +65,11 @@ impl<'i> Parser<'i> {
     list.push_back(self.collect_statement()?);
 
     while let Ok(()) = self.eat(token::TokenKind::Semicolon) {
-      list.push_back(self.collect_statement()?);
+      let statement = self.collect_statement()?;
+
+      if statement != ast::Stmt::None {
+        list.push_back(statement);
+      }
     }
 
     Ok(list)
@@ -103,7 +107,6 @@ impl<'i> Parser<'i> {
     self.eat(token::TokenKind::Equal)?;
 
     let value = self.collect_expr()?;
-    self.bump();
 
     Ok(ast::Stmt::Declaration(name.to_string(), value))
   }
@@ -121,7 +124,6 @@ impl<'i> Parser<'i> {
     self.eat(token::TokenKind::Equal)?;
 
     let value = self.collect_expr()?;
-    self.bump();
 
     Ok(ast::Expr::Assign(name.to_string(), Box::new(value)))
   }
@@ -167,13 +169,14 @@ impl<'i> Parser<'i> {
       match self.current_token {
         Some(token) => match token?.kind() {
           &token::TokenKind::CloseParen => break,
-          &token::TokenKind::Comma => continue,
+          &token::TokenKind::Comma => {
+            self.eat(token::TokenKind::Comma)?;
+            continue
+          },
           _ => ()
         },
         None => ()
       };
-
-      self.eat(token::TokenKind::Comma)?
     }
     self.eat(token::TokenKind::CloseParen)?;
 
@@ -189,7 +192,7 @@ impl<'i> Parser<'i> {
   }
 
   fn collect_expr(&mut self) -> Result<'i, ast::Expr> {
-    match self.current_token {
+    let result = match self.current_token {
       Some(token) => match token?.kind() {
         &token::TokenKind::OpenBrace => self.collect_block(),
         &token::TokenKind::Minus => {
@@ -209,7 +212,9 @@ impl<'i> Parser<'i> {
         _ => self.collect_comparator()
       },
       None => Ok(ast::Expr::None)
-    }
+    };
+    self.bump();
+    result
   }
 
   fn collect_block(&mut self) -> Result<'i, ast::Expr> {
@@ -218,8 +223,12 @@ impl<'i> Parser<'i> {
     let mut list = VecDeque::new();
 
     loop {
-      list.push_back(self.collect_statement()?);
-      self.eat(token::TokenKind::Semicolon)?;
+      let statement = self.collect_statement()?;
+
+      if statement != ast::Stmt::None {
+        list.push_back(statement);
+        self.eat(token::TokenKind::Semicolon)?;
+      }
 
       match self.current_token {
         Some(token) =>
@@ -418,7 +427,6 @@ impl<'i> Parser<'i> {
         &token::TokenKind::OpenParen => {
           self.eat(token::TokenKind::OpenParen)?;
           let expr = self.collect_expr()?;
-          self.bump();
           self.see(token::TokenKind::CloseParen)?;
           expr
         },
