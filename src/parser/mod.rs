@@ -195,20 +195,6 @@ impl<'i> Parser<'i> {
     let result = match self.current_token {
       Some(token) => match token?.kind() {
         &token::TokenKind::OpenBrace => self.collect_block(),
-        &token::TokenKind::Minus => {
-          self.eat(token::TokenKind::Minus)?;
-          Ok(ast::Expr::UnaryOp(
-            ast::UnaryOp::Negate,
-            Box::new(self.collect_expr()?)
-          ))
-        },
-        &token::TokenKind::Not => {
-          self.eat(token::TokenKind::Not)?;
-          Ok(ast::Expr::UnaryOp(
-            ast::UnaryOp::Not,
-            Box::new(self.collect_expr()?)
-          ))
-        },
         _ => self.collect_comparator()
       },
       None => Ok(ast::Expr::None)
@@ -429,6 +415,14 @@ impl<'i> Parser<'i> {
           let expr = self.collect_expr()?;
           self.see(token::TokenKind::CloseParen)?;
           expr
+        },
+        &token::TokenKind::Minus => {
+          self.eat(token::TokenKind::Minus)?;
+          ast::Expr::UnaryOp(ast::UnaryOp::Negate, Box::new(self.collect_litteral()?))
+        },
+        &token::TokenKind::Not => {
+          self.eat(token::TokenKind::Not)?;
+          ast::Expr::UnaryOp(ast::UnaryOp::Not, Box::new(self.collect_litteral()?))
         },
 
         _ => ast::Expr::None

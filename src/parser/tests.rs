@@ -158,6 +158,11 @@ fn unary() {
     UnaryOp::Negate,
     Box::new(Expr::IntLiteral(1))
   ))]);
+
+  parse("-(1)", vec![Stmt::ExprStmt(Expr::UnaryOp(
+    UnaryOp::Negate,
+    Box::new(Expr::IntLiteral(1))
+  ))]);
 }
 
 #[test]
@@ -165,25 +170,25 @@ fn precedence() {
   parse("x = -1 * 2 + 3 > 4 != 5", vec![Stmt::ExprStmt(
     Expr::Assign(
       "x".to_string(),
-      Box::new(Expr::UnaryOp(
-        UnaryOp::Negate,
+      Box::new(Expr::Op(
+        Op::NotEquals,
         Box::new(Expr::Op(
-          Op::NotEquals,
+          Op::GreaterThan,
           Box::new(Expr::Op(
-            Op::GreaterThan,
+            Op::Add,
             Box::new(Expr::Op(
-              Op::Add,
-              Box::new(Expr::Op(
-                Op::Multiply,
-                Box::new(Expr::IntLiteral(1)),
-                Box::new(Expr::IntLiteral(2))
+              Op::Multiply,
+              Box::new(Expr::UnaryOp(
+                UnaryOp::Negate,
+                Box::new(Expr::IntLiteral(1))
               )),
-              Box::new(Expr::IntLiteral(3))
+              Box::new(Expr::IntLiteral(2))
             )),
-            Box::new(Expr::IntLiteral(4))
+            Box::new(Expr::IntLiteral(3))
           )),
-          Box::new(Expr::IntLiteral(5))
-        ))
+          Box::new(Expr::IntLiteral(4))
+        )),
+        Box::new(Expr::IntLiteral(5))
       ))
     )
   )]);
