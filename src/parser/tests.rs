@@ -325,8 +325,27 @@ fn if_parse() {
   )]);
 }
 
-// #[test]
-// fn while_parse() {}
+#[test]
+fn loops_parse() {
+  parse("while true { 1 + 1; }", vec![Stmt::While(
+    Expr::BooleanLiteral(true),
+    VecDeque::from([Stmt::ExprStmt(Expr::Op(
+      Op::Add,
+      Box::new(Expr::IntLiteral(1)),
+      Box::new(Expr::IntLiteral(1))
+    ))])
+  )]);
+
+  parse("for i in 1 { 1 + 1; }", vec![Stmt::For(
+    "i".to_string(),
+    Expr::IntLiteral(1),
+    VecDeque::from([Stmt::ExprStmt(Expr::Op(
+      Op::Add,
+      Box::new(Expr::IntLiteral(1)),
+      Box::new(Expr::IntLiteral(1))
+    ))])
+  )]);
+}
 
 #[test]
 fn block_parse() {

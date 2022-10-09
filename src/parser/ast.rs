@@ -15,7 +15,8 @@ pub enum Op {
   Add,
   Subtract,
   Multiply,
-  Divide
+  Divide,
+  In
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -51,6 +52,7 @@ pub enum Stmt {
   ExprStmt(Expr),
   Declaration(String, Expr),
   While(Expr, VecDeque<Stmt>),
+  For(String, Expr, VecDeque<Stmt>),
 
   None
 }

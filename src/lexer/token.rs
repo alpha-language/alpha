@@ -45,6 +45,8 @@ pub enum TokenKind<'v> {
   If,
   Else,
   While,
+  For,
+  In,
   Fn,
   Return
 }

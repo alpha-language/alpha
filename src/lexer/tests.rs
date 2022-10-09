@@ -104,4 +104,11 @@ fn keywords() {
   lex("let", vec![Token::new(TokenKind::Let, 0, 3)]);
   lex("fn", vec![Token::new(TokenKind::Fn, 0, 2)]);
   lex("return", vec![Token::new(TokenKind::Return, 0, 6)]);
+  lex("true", vec![Token::new(TokenKind::True, 0, 4)]);
+  lex("false", vec![Token::new(TokenKind::False, 0, 5)]);
+  lex("if", vec![Token::new(TokenKind::If, 0, 2)]);
+  lex("else", vec![Token::new(TokenKind::Else, 0, 4)]);
+  lex("while", vec![Token::new(TokenKind::While, 0, 5)]);
+  lex("for", vec![Token::new(TokenKind::For, 0, 3)]);
+  lex("in", vec![Token::new(TokenKind::In, 0, 2)]);
 }

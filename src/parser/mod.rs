@@ -81,6 +81,7 @@ impl<'i> Parser<'i> {
         token::TokenKind::Let => self.collect_var_def(),
         token::TokenKind::Fn => self.collect_fn_decl(),
         token::TokenKind::While => self.collect_while(),
+        token::TokenKind::For => self.collect_for(),
         token::TokenKind::Return => {
           self.eat(token::TokenKind::Return)?;
           Ok(ast::Stmt::Return(self.collect_expr()?))
@@ -237,6 +238,29 @@ impl<'i> Parser<'i> {
     }))
   }
 
+  fn collect_for(&mut self) -> Result<'i, ast::Stmt> {
+    self.eat(token::TokenKind::For)?;
+
+    let name = match self.current_token {
+      Some(token) => match token?.kind() {
+        &token::TokenKind::ID(name) => name,
+        _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
+      },
+      None => return self.generate_expected(token::TokenKind::ID("abc"))
+    };
+    self.bump();
+    self.eat(token::TokenKind::In)?;
+
+    let codition = self.collect_expr()?;
+
+    let block = self.collect_block()?;
+
+    Ok(ast::Stmt::For(name.to_string(), codition, match block {
+      ast::Expr::Block(stmts) => stmts,
+      _ => return self.generate_expected(token::TokenKind::OpenBracket)
+    }))
+  }
+
   fn collect_expr(&mut self) -> Result<'i, ast::Expr> {
     let result = match self.current_token {
       Some(token) => match token?.kind() {
@@ -371,6 +395,11 @@ impl<'i> Parser<'i> {
 
     while let Some(token) = self.lookahead_token {
       expr = match token?.kind() {
+        &token::TokenKind::In => {
+          self.bump();
+          self.eat(token::TokenKind::In)?;
+          ast::Expr::Op(ast::Op::In, Box::new(expr), Box::new(self.collect_term()?))
+        },
         &token::TokenKind::Equals => {
           self.bump();
           self.eat(token::TokenKind::Equals)?;
