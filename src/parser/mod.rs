@@ -193,6 +193,46 @@ impl<'i> Parser<'i> {
     ))
   }
 
+  fn collect_fn_call(&mut self) -> Result<'i, ast::Expr> {
+    let name = match self.current_token {
+      Some(token) => match token?.kind() {
+        &token::TokenKind::ID(name) => name,
+        _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
+      },
+      None => return self.generate_expected(token::TokenKind::ID("abc"))
+    };
+    self.bump();
+
+    let mut args = VecDeque::new();
+
+    self.eat(token::TokenKind::OpenParen)?;
+    loop {
+      match self.current_token {
+        Some(token) => match token?.kind() {
+          &token::TokenKind::CloseParen => break,
+          _ => {
+            args.push_back(self.collect_expr()?);
+          }
+        },
+        None => return self.generate_expected(token::TokenKind::ID("abc"))
+      };
+
+      match self.current_token {
+        Some(token) => match token?.kind() {
+          &token::TokenKind::CloseParen => break,
+          &token::TokenKind::Comma => {
+            self.eat(token::TokenKind::Comma)?;
+            continue
+          },
+          _ => ()
+        },
+        None => ()
+      };
+    }
+
+    Ok(ast::Expr::Call(name.to_string(), args))
+  }
+
   fn collect_if(&mut self) -> Result<'i, ast::Expr> {
     let mut conditions = VecDeque::new();
     let mut first = true;
@@ -481,6 +521,7 @@ impl<'i> Parser<'i> {
         &token::TokenKind::ID(name) => match self.lookahead_token {
           Some(next_token) => match next_token?.kind() {
             &token::TokenKind::Equal => self.collect_var_assignment()?,
+            &token::TokenKind::OpenParen => self.collect_fn_call()?,
             _ => ast::Expr::Identifier(name.to_string())
           },
           _ => ast::Expr::Identifier(name.to_string())

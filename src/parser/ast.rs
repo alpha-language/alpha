@@ -35,7 +35,7 @@ pub enum Expr {
   BooleanLiteral(bool),
 
   Assign(String, Box<Expr>),
-  Call(Box<Expr>, VecDeque<Expr>),
+  Call(String, VecDeque<Expr>),
   Closure(VecDeque<(String, String)>, VecDeque<Stmt>),
   Block(VecDeque<Stmt>),
   If(VecDeque<(Option<Expr>, VecDeque<Stmt>)>),

@@ -221,8 +221,23 @@ fn grouping() {
   ))]);
 }
 
-// #[test]
-// fn call() {}
+#[test]
+fn call() {
+  parse("a()", vec![Stmt::ExprStmt(Expr::Call(
+    "a".to_string(),
+    VecDeque::new()
+  ))]);
+
+  parse("a(1)", vec![Stmt::ExprStmt(Expr::Call(
+    "a".to_string(),
+    VecDeque::from([Expr::IntLiteral(1)])
+  ))]);
+
+  parse("a(1, 1,)", vec![Stmt::ExprStmt(Expr::Call(
+    "a".to_string(),
+    VecDeque::from([Expr::IntLiteral(1), Expr::IntLiteral(1)])
+  ))]);
+}
 
 #[test]
 fn declaration() {
@@ -251,7 +266,15 @@ fn declaration() {
 
 #[test]
 fn function_declaration_and_return() {
-  parse("fn test(a: i8, b: i8) {\nreturn a + b;\n}", vec![
+  parse("fn test(a: i8) {\nreturn a;\n}", vec![Stmt::Declaration(
+    "test".to_string(),
+    Expr::Closure(
+      VecDeque::from([("a".to_string(), "i8".to_string())]),
+      VecDeque::from([Stmt::Return(Expr::Identifier("a".to_string()))])
+    )
+  )]);
+
+  parse("fn test(a: i8, b: i8,) {\nreturn a + b;\n}", vec![
     Stmt::Declaration(
       "test".to_string(),
       Expr::Closure(
