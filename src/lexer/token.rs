@@ -37,9 +37,12 @@ pub enum TokenKind<'v> {
   String(&'v str),
   Int(i64),
   Float(f64),
+  True,
+  False,
 
   // Keywords
   Let,
+  While,
   Fn,
   Return
 }

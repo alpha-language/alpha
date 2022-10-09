@@ -269,7 +269,11 @@ impl<'i> Iterator for Lexer<'i> {
               match id {
                 "fn" => TokenKind::Fn,
                 "let" => TokenKind::Let,
+                "while" => TokenKind::While,
                 "return" => TokenKind::Return,
+
+                "true" => TokenKind::True,
+                "false" => TokenKind::False,
                 id => TokenKind::ID(id)
               },
               id.len()

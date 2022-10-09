@@ -80,6 +80,8 @@ impl<'i> Parser<'i> {
       return match token?.kind() {
         token::TokenKind::Let => self.collect_var_def(),
         token::TokenKind::Fn => self.collect_fn_decl(),
+        // token::TokenKind::If => self.collect_if(),
+        token::TokenKind::While => self.collect_while(),
         token::TokenKind::Return => {
           self.eat(token::TokenKind::Return)?;
           Ok(ast::Stmt::Return(self.collect_expr()?))
@@ -189,6 +191,19 @@ impl<'i> Parser<'i> {
         _ => return self.generate_expected(token::TokenKind::OpenBracket)
       })
     ))
+  }
+
+  fn collect_while(&mut self) -> Result<'i, ast::Stmt> {
+    self.eat(token::TokenKind::While)?;
+
+    let codition = self.collect_expr()?;
+
+    let block = self.collect_block()?;
+
+    Ok(ast::Stmt::While(codition, match block {
+      ast::Expr::Block(stmts) => stmts,
+      _ => return self.generate_expected(token::TokenKind::OpenBracket)
+    }))
   }
 
   fn collect_expr(&mut self) -> Result<'i, ast::Expr> {
@@ -410,6 +425,8 @@ impl<'i> Parser<'i> {
           },
           _ => ast::Expr::Identifier(name.to_string())
         },
+        &token::TokenKind::True => ast::Expr::BooleanLiteral(true),
+        &token::TokenKind::False => ast::Expr::BooleanLiteral(false),
         &token::TokenKind::OpenParen => {
           self.eat(token::TokenKind::OpenParen)?;
           let expr = self.collect_expr()?;
