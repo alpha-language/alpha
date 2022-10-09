@@ -37,6 +37,7 @@ pub enum Expr {
   Call(Box<Expr>, VecDeque<Expr>),
   Closure(VecDeque<(String, String)>, VecDeque<Stmt>),
   Block(VecDeque<Stmt>),
+  If(VecDeque<(Option<Expr>, VecDeque<Stmt>)>),
 
   UnaryOp(UnaryOp, Box<Expr>),
   Op(Op, Box<Expr>, Box<Expr>),
@@ -49,7 +50,6 @@ pub enum Stmt {
   Return(Expr),
   ExprStmt(Expr),
   Declaration(String, Expr),
-  If(Expr, VecDeque<Stmt>, VecDeque<Stmt>),
   While(Expr, VecDeque<Stmt>),
 
   None

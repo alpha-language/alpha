@@ -230,6 +230,23 @@ fn declaration() {
     "x".to_string(),
     Expr::IntLiteral(10)
   )]);
+
+  parse("let x = {10;};", vec![Stmt::Declaration(
+    "x".to_string(),
+    Expr::Block(VecDeque::from([Stmt::ExprStmt(Expr::IntLiteral(10))]))
+  )]);
+
+  parse("let x = if true { 1 + 1; };", vec![Stmt::Declaration(
+    "x".to_string(),
+    Expr::If(VecDeque::from([(
+      Some(Expr::BooleanLiteral(true)),
+      VecDeque::from([Stmt::ExprStmt(Expr::Op(
+        Op::Add,
+        Box::new(Expr::IntLiteral(1)),
+        Box::new(Expr::IntLiteral(1))
+      ))])
+    )]))
+  )]);
 }
 
 #[test]
@@ -252,8 +269,61 @@ fn function_declaration_and_return() {
   ]);
 }
 
-// #[test]
-// fn if_parse() {}
+#[test]
+fn if_parse() {
+  parse("if true { 1 + 1; }", vec![Stmt::ExprStmt(Expr::If(
+    VecDeque::from([(
+      Some(Expr::BooleanLiteral(true)),
+      VecDeque::from([Stmt::ExprStmt(Expr::Op(
+        Op::Add,
+        Box::new(Expr::IntLiteral(1)),
+        Box::new(Expr::IntLiteral(1))
+      ))])
+    )])
+  ))]);
+
+  parse("if true { 1 + 1; } else if true { 1 + 1; };", vec![
+    Stmt::ExprStmt(Expr::If(VecDeque::from([
+      (
+        Some(Expr::BooleanLiteral(true)),
+        VecDeque::from([Stmt::ExprStmt(Expr::Op(
+          Op::Add,
+          Box::new(Expr::IntLiteral(1)),
+          Box::new(Expr::IntLiteral(1))
+        ))])
+      ),
+      (
+        Some(Expr::BooleanLiteral(true)),
+        VecDeque::from([Stmt::ExprStmt(Expr::Op(
+          Op::Add,
+          Box::new(Expr::IntLiteral(1)),
+          Box::new(Expr::IntLiteral(1))
+        ))])
+      )
+    ]))),
+  ]);
+
+  parse("if true { 1 + 1; } else { 1 + 1; };", vec![Stmt::ExprStmt(
+    Expr::If(VecDeque::from([
+      (
+        Some(Expr::BooleanLiteral(true)),
+        VecDeque::from([Stmt::ExprStmt(Expr::Op(
+          Op::Add,
+          Box::new(Expr::IntLiteral(1)),
+          Box::new(Expr::IntLiteral(1))
+        ))])
+      ),
+      (
+        None,
+        VecDeque::from([Stmt::ExprStmt(Expr::Op(
+          Op::Add,
+          Box::new(Expr::IntLiteral(1)),
+          Box::new(Expr::IntLiteral(1))
+        ))])
+      )
+    ]))
+  )]);
+}
 
 // #[test]
 // fn while_parse() {}

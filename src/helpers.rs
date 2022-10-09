@@ -8,3 +8,8 @@ pub fn move_to<T>(dest: &mut T, src: T) -> T {
     core::ptr::read(dest)
   }
 }
+
+#[inline]
+pub fn copy<T>(src: &T) -> T {
+  unsafe { core::ptr::read(src) }
+}

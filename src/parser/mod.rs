@@ -80,7 +80,6 @@ impl<'i> Parser<'i> {
       return match token?.kind() {
         token::TokenKind::Let => self.collect_var_def(),
         token::TokenKind::Fn => self.collect_fn_decl(),
-        // token::TokenKind::If => self.collect_if(),
         token::TokenKind::While => self.collect_while(),
         token::TokenKind::Return => {
           self.eat(token::TokenKind::Return)?;
@@ -191,6 +190,38 @@ impl<'i> Parser<'i> {
         _ => return self.generate_expected(token::TokenKind::OpenBracket)
       })
     ))
+  }
+
+  fn collect_if(&mut self) -> Result<'i, ast::Expr> {
+    let mut conditions = VecDeque::new();
+    let mut first = true;
+
+    loop {
+      if !mem::replace(&mut first, false) {
+        self.eat(token::TokenKind::Else)?;
+      }
+
+      let condition = if let Ok(()) = self.see(token::TokenKind::If) {
+        self.eat(token::TokenKind::If)?;
+        Some(self.collect_expr()?)
+      } else {
+        None
+      };
+
+      let block = self.collect_block()?;
+      conditions.push_back((helpers::copy(&condition), match block {
+        ast::Expr::Block(stmts) => stmts,
+        _ => return self.generate_expected(token::TokenKind::OpenBracket)
+      }));
+
+      match condition {
+        Some(_) => match self.see(token::TokenKind::Else) {
+          Ok(_) => continue,
+          Err(_) => break Ok(ast::Expr::If(conditions))
+        },
+        None => break Ok(ast::Expr::If(conditions))
+      }
+    }
   }
 
   fn collect_while(&mut self) -> Result<'i, ast::Stmt> {
@@ -427,6 +458,7 @@ impl<'i> Parser<'i> {
         },
         &token::TokenKind::True => ast::Expr::BooleanLiteral(true),
         &token::TokenKind::False => ast::Expr::BooleanLiteral(false),
+        &token::TokenKind::If => self.collect_if()?,
         &token::TokenKind::OpenParen => {
           self.eat(token::TokenKind::OpenParen)?;
           let expr = self.collect_expr()?;

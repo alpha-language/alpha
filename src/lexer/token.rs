@@ -42,6 +42,8 @@ pub enum TokenKind<'v> {
 
   // Keywords
   Let,
+  If,
+  Else,
   While,
   Fn,
   Return
