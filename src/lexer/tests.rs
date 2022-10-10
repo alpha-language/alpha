@@ -33,7 +33,7 @@ fn delimiters() {
 
 #[test]
 fn operators() {
-  lex(", . + - * / = == ! != > >= < <= & && | ||", vec![
+  lex(", . + - * / = == ! != > >= < <= & && | || %", vec![
     Token::new(TokenKind::Comma, 0, 1),
     Token::new(TokenKind::Dot, 2, 1),
     Token::new(TokenKind::Plus, 4, 1),
@@ -52,6 +52,7 @@ fn operators() {
     Token::new(TokenKind::And, 34, 2),
     Token::new(TokenKind::Pipe, 37, 1),
     Token::new(TokenKind::Or, 39, 2),
+    Token::new(TokenKind::Percent, 42, 1),
   ]);
 }
 

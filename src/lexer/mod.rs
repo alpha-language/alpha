@@ -176,6 +176,7 @@ impl<'i> Iterator for Lexer<'i> {
         } else {
           Some(Ok(Token::new(TokenKind::Slash, i, 1)))
         },
+      Some((i, '%')) => Some(Ok(Token::new(TokenKind::Percent, i, 1))),
 
       Some((i, '!')) =>
         if let Some((_, '=')) = self.lookahead {

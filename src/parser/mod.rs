@@ -393,6 +393,15 @@ impl<'i> Parser<'i> {
             Box::new(self.collect_binary()?)
           )
         },
+        &token::TokenKind::Percent => {
+          self.bump();
+          self.eat(token::TokenKind::Percent)?;
+          ast::Expr::Op(
+            ast::Op::ModDiv,
+            Box::new(expr),
+            Box::new(self.collect_binary()?)
+          )
+        },
         _ => break
       };
     }

@@ -16,6 +16,7 @@ pub enum Op {
   Subtract,
   Multiply,
   Divide,
+  ModDiv,
   In
 }
 

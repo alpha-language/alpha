@@ -145,6 +145,12 @@ fn division() {
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
   ))]);
+
+  parse("1 % 1", vec![Stmt::ExprStmt(Expr::Op(
+    Op::ModDiv,
+    Box::new(Expr::IntLiteral(1)),
+    Box::new(Expr::IntLiteral(1))
+  ))]);
 }
 
 #[test]

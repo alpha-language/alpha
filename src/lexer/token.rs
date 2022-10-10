@@ -15,6 +15,7 @@ pub enum TokenKind<'v> {
   Minus,        // -
   Star,         // *
   Slash,        // /
+  Percent,      // %
   Not,          // !
   NotEqual,     // !=
   Equal,        // =
