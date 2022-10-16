@@ -51,6 +51,7 @@ pub enum Expr {
 pub enum Stmt {
   Return(Expr),
   ExprStmt(Expr),
+  Function(String, VecDeque<(String, String)>, VecDeque<Stmt>),
   Declaration(String, Expr),
   While(Expr, VecDeque<Stmt>),
   For(String, Expr, VecDeque<Stmt>),

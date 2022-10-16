@@ -272,30 +272,39 @@ fn declaration() {
 
 #[test]
 fn function_declaration_and_return() {
-  parse("fn test(a: i8) {\nreturn a;\n}", vec![Stmt::Declaration(
+  parse("fn test(a: i8) {\nreturn a;\n}", vec![Stmt::Function(
     "test".to_string(),
-    Expr::Closure(
-      VecDeque::from([("a".to_string(), "i8".to_string())]),
-      VecDeque::from([Stmt::Return(Expr::Identifier("a".to_string()))])
-    )
+    VecDeque::from([("a".to_string(), "i8".to_string())]),
+    VecDeque::from([Stmt::Return(Expr::Identifier("a".to_string()))])
   )]);
 
   parse("fn test(a: i8, b: i8,) {\nreturn a + b;\n}", vec![
-    Stmt::Declaration(
+    Stmt::Function(
       "test".to_string(),
-      Expr::Closure(
-        VecDeque::from([
-          ("a".to_string(), "i8".to_string()),
-          ("b".to_string(), "i8".to_string())
-        ]),
-        VecDeque::from([Stmt::Return(Expr::Op(
-          Op::Add,
-          Box::new(Expr::Identifier("a".to_string())),
-          Box::new(Expr::Identifier("b".to_string()))
-        ))])
-      )
+      VecDeque::from([
+        ("a".to_string(), "i8".to_string()),
+        ("b".to_string(), "i8".to_string())
+      ]),
+      VecDeque::from([Stmt::Return(Expr::Op(
+        Op::Add,
+        Box::new(Expr::Identifier("a".to_string())),
+        Box::new(Expr::Identifier("b".to_string()))
+      ))])
     ),
   ]);
+}
+
+#[test]
+fn closure() {
+  parse("let main = fn (a: i8) {\nreturn a;\n}", vec![
+    Stmt::Declaration(
+      "main".to_string(),
+      Expr::Closure(
+        VecDeque::from([("a".to_string(), "i8".to_string())]),
+        VecDeque::from([Stmt::Return(Expr::Identifier("a".to_string()))])
+      )
+    ),
+  ])
 }
 
 #[test]

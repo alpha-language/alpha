@@ -142,55 +142,14 @@ impl<'i> Parser<'i> {
     };
     self.bump();
 
-    let mut args = VecDeque::new();
-
-    self.eat(token::TokenKind::OpenParen)?;
-    loop {
-      match self.current_token {
-        Some(token) => match token?.kind() {
-          &token::TokenKind::CloseParen => break,
-          &token::TokenKind::ID(name) => {
-            self.bump();
-            self.eat(token::TokenKind::Colon)?;
-            let r#type = match self.current_token {
-              Some(token) => match token?.kind() {
-                &token::TokenKind::ID(t) => t,
-                _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
-              },
-              None => return self.generate_expected(token::TokenKind::ID("abc"))
-            };
-            self.bump();
-
-            args.push_back((name.to_string(), r#type.to_string()));
-          },
-          _ => self.eat(token::TokenKind::ID("abc"))?
-        },
-        None => return self.generate_expected(token::TokenKind::ID("abc"))
-      };
-
-      match self.current_token {
-        Some(token) => match token?.kind() {
-          &token::TokenKind::CloseParen => break,
-          &token::TokenKind::Comma => {
-            self.eat(token::TokenKind::Comma)?;
-            continue
-          },
-          _ => ()
-        },
-        None => ()
-      };
-    }
-    self.eat(token::TokenKind::CloseParen)?;
+    let args = self.collect_args()?;
 
     let block = self.collect_block()?;
 
-    Ok(ast::Stmt::Declaration(
-      name.to_string(),
-      ast::Expr::Closure(args, match block {
-        ast::Expr::Block(stmts) => stmts,
-        _ => return self.generate_expected(token::TokenKind::OpenBracket)
-      })
-    ))
+    Ok(ast::Stmt::Function(name.to_string(), args, match block {
+      ast::Expr::Block(stmts) => stmts,
+      _ => return self.generate_expected(token::TokenKind::OpenBracket)
+    }))
   }
 
   fn collect_fn_call(&mut self) -> Result<'i, ast::Expr> {
@@ -538,6 +497,7 @@ impl<'i> Parser<'i> {
         &token::TokenKind::True => ast::Expr::BooleanLiteral(true),
         &token::TokenKind::False => ast::Expr::BooleanLiteral(false),
         &token::TokenKind::If => self.collect_if()?,
+        &token::TokenKind::Fn => self.collect_closure()?,
         &token::TokenKind::OpenParen => {
           self.eat(token::TokenKind::OpenParen)?;
           let expr = self.collect_expr()?;
@@ -557,6 +517,63 @@ impl<'i> Parser<'i> {
       },
       None => ast::Expr::None
     })
+  }
+
+  fn collect_closure(&mut self) -> Result<'i, ast::Expr> {
+    self.eat(token::TokenKind::Fn)?;
+
+    let args = self.collect_args()?;
+
+    let block = self.collect_block()?;
+
+    Ok(ast::Expr::Closure(args, match block {
+      ast::Expr::Block(stmts) => stmts,
+      _ => return self.generate_expected(token::TokenKind::OpenBracket)
+    }))
+  }
+
+  fn collect_args(&mut self) -> Result<'i, VecDeque<(String, String)>> {
+    let mut args = VecDeque::new();
+
+    self.eat(token::TokenKind::OpenParen)?;
+    loop {
+      match self.current_token {
+        Some(token) => match token?.kind() {
+          &token::TokenKind::CloseParen => break,
+          &token::TokenKind::ID(name) => {
+            self.bump();
+            self.eat(token::TokenKind::Colon)?;
+            let r#type = match self.current_token {
+              Some(token) => match token?.kind() {
+                &token::TokenKind::ID(t) => t,
+                _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
+              },
+              None => return self.generate_expected(token::TokenKind::ID("abc"))
+            };
+            self.bump();
+
+            args.push_back((name.to_string(), r#type.to_string()));
+          },
+          _ => self.eat(token::TokenKind::ID("abc"))?
+        },
+        None => return self.generate_expected(token::TokenKind::ID("abc"))
+      };
+
+      match self.current_token {
+        Some(token) => match token?.kind() {
+          &token::TokenKind::CloseParen => break,
+          &token::TokenKind::Comma => {
+            self.eat(token::TokenKind::Comma)?;
+            continue
+          },
+          _ => ()
+        },
+        None => ()
+      };
+    }
+    self.eat(token::TokenKind::CloseParen)?;
+
+    Ok(args)
   }
 
   /// ERRORS
