@@ -6,8 +6,9 @@ use core::mem;
 
 use std::collections::VecDeque;
 
-mod ast;
+pub mod ast;
 mod tests;
+pub mod transpiler;
 
 pub struct Parser<'i> {
   lexer: lexer::Lexer<'i>,
