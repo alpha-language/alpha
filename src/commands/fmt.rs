@@ -6,19 +6,35 @@ use crate::lexer::Lexer;
 use crate::parser::transpiler::Transpiler;
 use crate::parser::{ast, Parser};
 
-struct Formator<'p>(Parser<'p>);
+struct Formator<'p> {
+  parser: Parser<'p>,
+  indent: usize
+}
+
+impl<'f> Formator<'f> {
+  fn new(parser: Parser<'f>) -> Self {
+    Self {
+      parser,
+      indent: 0
+    }
+  }
+}
 
 impl<'f> Transpiler for Formator<'f> {
   fn transpile(&mut self) -> Result<'f, String> {
-    let statements = self.0.parse()?;
-    Ok(self.transpile_statements(&statements))
+    let statements = self.parser.parse();
+    Ok(self.transpile_statements(&statements?))
   }
 
   fn transpile_statements(&mut self, statements: &VecDeque<ast::Stmt>) -> String {
     let mut result = String::new();
 
     for statement in statements.iter() {
-      result.push_str(self.transpile_statement(statement).as_str())
+      result = format!(
+        "{result}{}{}",
+        "\t".repeat(self.indent),
+        self.transpile_statement(statement).as_str()
+      );
     }
 
     result
@@ -26,28 +42,59 @@ impl<'f> Transpiler for Formator<'f> {
 
   fn transpile_statement(&mut self, statement: &ast::Stmt) -> String {
     match statement {
-      ast::Stmt::Function(name, args, body) => format!(
-        "fn {name}({}){{\n{}}}\n",
-        args
-          .iter()
-          .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
-          .collect::<Vec<_>>()
-          .join(", "),
-        self.transpile_statements(body)
-      ),
+      ast::Stmt::Function(name, args, body) => {
+        self.indent += 1;
+        let r = if body.len() > 0 {
+          format!(
+            "fn {name}({}) {{\n{}}}\n",
+            args
+              .iter()
+              .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
+              .collect::<Vec<_>>()
+              .join(", "),
+            self.transpile_statements(body)
+          )
+        } else {
+          format!(
+            "fn {name}({}) {{}}\n",
+            args
+              .iter()
+              .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
+              .collect::<Vec<_>>()
+              .join(", "),
+          )
+        };
+        self.indent -= 1;
+        r
+      },
       ast::Stmt::Declaration(name, expr) =>
         format!("let {name} = {};\n", self.transpile_expression(expr)),
-      ast::Stmt::ExprStmt(expr) => self.transpile_expression(expr) + ";",
-      ast::Stmt::For(var, list, body) => format!(
-        "for {var} in {} {{\n{}\n}}\n",
-        self.transpile_expression(list),
-        self.transpile_statements(body)
-      ),
-      ast::Stmt::While(cond, body) => format!(
-        "while {} {{\n{}\n}}\n",
-        self.transpile_expression(cond),
-        self.transpile_statements(body)
-      ),
+      ast::Stmt::ExprStmt(expr) => format!("{}{}\n", self.transpile_expression(expr), match expr {
+        ast::Expr::If(_) | ast::Expr::Block(_) => "",
+        _ => ";"
+      }),
+      ast::Stmt::For(var, list, body) => {
+        self.indent += 1;
+        let r = format!(
+          "for {var} in {} {{\n{}{}}}\n",
+          self.transpile_expression(list),
+          self.transpile_statements(body),
+          "\t".repeat(self.indent - 1)
+        );
+        self.indent -= 1;
+        r
+      },
+      ast::Stmt::While(cond, body) => {
+        self.indent += 1;
+        let r = format!(
+          "while {} {{\n{}{}}}\n",
+          self.transpile_expression(cond),
+          self.transpile_statements(body),
+          "\t".repeat(self.indent - 1)
+        );
+        self.indent -= 1;
+        r
+      },
       ast::Stmt::Return(expr) => format!("return {};\n", self.transpile_expression(expr)),
       _ => String::new()
     }
@@ -64,7 +111,16 @@ impl<'f> Transpiler for Formator<'f> {
 
       ast::Expr::Assign(name, expr) =>
         format!("{name} = {}", self.transpile_expression(expr.as_ref())),
-      ast::Expr::Block(body) => format!("{{\n{}\n}}", self.transpile_statements(body)),
+      ast::Expr::Block(body) => {
+        self.indent += 1;
+        let r = format!(
+          "{{\n{}{}}}",
+          self.transpile_statements(body),
+          "\t".repeat(self.indent - 1)
+        );
+        self.indent -= 1;
+        r
+      },
       ast::Expr::Call(func, args) => format!(
         "{func}({})",
         args
@@ -73,35 +129,62 @@ impl<'f> Transpiler for Formator<'f> {
           .collect::<Vec<_>>()
           .join(", ")
       ),
-      ast::Expr::Closure(args, body) => format!(
-        "fn ({}){{\n{}}}\n",
-        args
-          .iter()
-          .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
-          .collect::<Vec<_>>()
-          .join(", "),
-        self.transpile_statements(body)
-      ),
+      ast::Expr::Closure(args, body) => {
+        self.indent += 1;
+        let r = if body.len() > 0 {
+          format!(
+            "fn ({}){{\n{}{}}}\n",
+            args
+              .iter()
+              .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
+              .collect::<Vec<_>>()
+              .join(", "),
+            self.transpile_statements(body),
+            "\t".repeat(self.indent - 1)
+          )
+        } else {
+          format!(
+            "fn ({}){{}}\n",
+            args
+              .iter()
+              .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
+              .collect::<Vec<_>>()
+              .join(", "),
+          )
+        };
+        self.indent -= 1;
+        r
+      },
       ast::Expr::If(conditions) => {
         let mut conditions = conditions.iter();
         let (cond, body) = conditions.next().unwrap();
         let cond = &cond.clone().unwrap();
+        self.indent += 1;
         let mut result = format!(
-          "if {} {{\n{}\n}}",
+          "if {} {{\n{}{}}}",
           self.transpile_expression(cond),
-          self.transpile_statements(body)
+          self.transpile_statements(body),
+          "\t".repeat(self.indent - 1)
         );
+        self.indent -= 1;
 
         while let Some(otherwise) = conditions.next() {
+          self.indent += 1;
           result += &if let Some(cond) = &otherwise.0 {
             format!(
-              "else if {} {{\n{}\n}}",
+              "else if {} {{\n{}{}}}",
               self.transpile_expression(cond),
-              self.transpile_statements(&otherwise.1)
+              self.transpile_statements(&otherwise.1),
+              "\t".repeat(self.indent - 1)
             )
           } else {
-            format!("else {{\n{}\n}}", self.transpile_statements(&otherwise.1))
+            format!(
+              "else {{\n{}{}}}",
+              self.transpile_statements(&otherwise.1),
+              "\t".repeat(self.indent - 1)
+            )
           };
+          self.indent -= 1;
         }
 
         result
@@ -154,7 +237,7 @@ pub fn handler(file: String) {
   let file = fs::read_to_string(file).unwrap();
 
   let lexer = Lexer::new(&file);
-  let mut formator = Formator(Parser::new(lexer));
+  let mut formator = Formator::new(Parser::new(lexer));
 
   println!("{}", formator.transpile().unwrap());
 }
