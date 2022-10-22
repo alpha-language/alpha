@@ -15,37 +15,37 @@ fn parse(input: &str, expected: Vec<Stmt>) {
 
 #[test]
 fn literals() {
-  parse("123", vec![Stmt::ExprStmt(Expr::IntLiteral(123))]);
-  parse("123.45", vec![Stmt::ExprStmt(Expr::FloatLiteral(123.45))]);
-  parse("'p'", vec![Stmt::ExprStmt(Expr::CharLiteral(
+  parse("123;", vec![Stmt::ExprStmt(Expr::IntLiteral(123))]);
+  parse("123.45;", vec![Stmt::ExprStmt(Expr::FloatLiteral(123.45))]);
+  parse("'p';", vec![Stmt::ExprStmt(Expr::CharLiteral(
     "p".to_string()
   ))]);
-  parse("\"string\"", vec![Stmt::ExprStmt(Expr::StringLiteral(
+  parse("\"string\";", vec![Stmt::ExprStmt(Expr::StringLiteral(
     "string".to_string()
   ))]);
 }
 
 #[test]
 fn identifiers() {
-  parse("id", vec![Stmt::ExprStmt(Expr::Identifier(
+  parse("id;", vec![Stmt::ExprStmt(Expr::Identifier(
     "id".to_string()
   ))]);
-  parse("_id", vec![Stmt::ExprStmt(Expr::Identifier(
+  parse("_id;", vec![Stmt::ExprStmt(Expr::Identifier(
     "_id".to_string()
   ))]);
-  parse("id123", vec![Stmt::ExprStmt(Expr::Identifier(
+  parse("id123;", vec![Stmt::ExprStmt(Expr::Identifier(
     "id123".to_string()
   ))]);
 }
 
 #[test]
 fn assignment() {
-  parse("x = 10", vec![Stmt::ExprStmt(Expr::Assign(
+  parse("x = 10;", vec![Stmt::ExprStmt(Expr::Assign(
     "x".to_string(),
     Box::new(Expr::IntLiteral(10))
   ))]);
 
-  parse("x = y = 10", vec![Stmt::ExprStmt(Expr::Assign(
+  parse("x = y = 10;", vec![Stmt::ExprStmt(Expr::Assign(
     "x".to_string(),
     Box::new(Expr::Assign(
       "y".to_string(),
@@ -56,13 +56,13 @@ fn assignment() {
 
 #[test]
 fn logic() {
-  parse("1 && 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 && 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::And,
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
   ))]);
 
-  parse("1 || 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 || 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::Or,
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
@@ -71,13 +71,13 @@ fn logic() {
 
 #[test]
 fn equality() {
-  parse("1 == 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 == 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::Equals,
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
   ))]);
 
-  parse("1 != 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 != 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::NotEquals,
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
@@ -86,25 +86,25 @@ fn equality() {
 
 #[test]
 fn comparison() {
-  parse("10 > 5", vec![Stmt::ExprStmt(Expr::Op(
+  parse("10 > 5;", vec![Stmt::ExprStmt(Expr::Op(
     Op::GreaterThan,
     Box::new(Expr::IntLiteral(10)),
     Box::new(Expr::IntLiteral(5))
   ))]);
 
-  parse("10 >= 5", vec![Stmt::ExprStmt(Expr::Op(
+  parse("10 >= 5;", vec![Stmt::ExprStmt(Expr::Op(
     Op::GreaterEquals,
     Box::new(Expr::IntLiteral(10)),
     Box::new(Expr::IntLiteral(5))
   ))]);
 
-  parse("10 < 5", vec![Stmt::ExprStmt(Expr::Op(
+  parse("10 < 5;", vec![Stmt::ExprStmt(Expr::Op(
     Op::LessThan,
     Box::new(Expr::IntLiteral(10)),
     Box::new(Expr::IntLiteral(5))
   ))]);
 
-  parse("10 <= 5", vec![Stmt::ExprStmt(Expr::Op(
+  parse("10 <= 5;", vec![Stmt::ExprStmt(Expr::Op(
     Op::LessEquals,
     Box::new(Expr::IntLiteral(10)),
     Box::new(Expr::IntLiteral(5))
@@ -113,7 +113,7 @@ fn comparison() {
 
 #[test]
 fn addition() {
-  parse("1 + 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 + 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::Add,
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
@@ -122,7 +122,7 @@ fn addition() {
 
 #[test]
 fn subtraction() {
-  parse("1 - 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 - 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::Subtract,
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
@@ -131,7 +131,7 @@ fn subtraction() {
 
 #[test]
 fn multiplication() {
-  parse("1 * 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 * 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::Multiply,
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
@@ -140,13 +140,13 @@ fn multiplication() {
 
 #[test]
 fn division() {
-  parse("1 / 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 / 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::Divide,
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
   ))]);
 
-  parse("1 % 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 % 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::ModDiv,
     Box::new(Expr::IntLiteral(1)),
     Box::new(Expr::IntLiteral(1))
@@ -155,17 +155,17 @@ fn division() {
 
 #[test]
 fn unary() {
-  parse("!1", vec![Stmt::ExprStmt(Expr::UnaryOp(
+  parse("!1;", vec![Stmt::ExprStmt(Expr::UnaryOp(
     UnaryOp::Not,
     Box::new(Expr::IntLiteral(1))
   ))]);
 
-  parse("-1", vec![Stmt::ExprStmt(Expr::UnaryOp(
+  parse("-1;", vec![Stmt::ExprStmt(Expr::UnaryOp(
     UnaryOp::Negate,
     Box::new(Expr::IntLiteral(1))
   ))]);
 
-  parse("-(1)", vec![Stmt::ExprStmt(Expr::UnaryOp(
+  parse("-(1);", vec![Stmt::ExprStmt(Expr::UnaryOp(
     UnaryOp::Negate,
     Box::new(Expr::IntLiteral(1))
   ))]);
@@ -173,7 +173,7 @@ fn unary() {
 
 #[test]
 fn precedence() {
-  parse("x = -1 * 2 + 3 > 4 != 5", vec![Stmt::ExprStmt(
+  parse("x = -1 * 2 + 3 > 4 != 5;", vec![Stmt::ExprStmt(
     Expr::Assign(
       "x".to_string(),
       Box::new(Expr::Op(
@@ -199,7 +199,7 @@ fn precedence() {
     )
   )]);
 
-  parse("1 && 1 || 1", vec![Stmt::ExprStmt(Expr::Op(
+  parse("1 && 1 || 1;", vec![Stmt::ExprStmt(Expr::Op(
     Op::Or,
     Box::new(Expr::Op(
       Op::And,
@@ -212,7 +212,7 @@ fn precedence() {
 
 #[test]
 fn grouping() {
-  parse("2 * (1 + 2) * 3", vec![Stmt::ExprStmt(Expr::Op(
+  parse("2 * (1 + 2) * 3;", vec![Stmt::ExprStmt(Expr::Op(
     Op::Multiply,
     Box::new(Expr::Op(
       Op::Multiply,
@@ -229,17 +229,17 @@ fn grouping() {
 
 #[test]
 fn call() {
-  parse("a()", vec![Stmt::ExprStmt(Expr::Call(
+  parse("a();", vec![Stmt::ExprStmt(Expr::Call(
     "a".to_string(),
     VecDeque::new()
   ))]);
 
-  parse("a(1)", vec![Stmt::ExprStmt(Expr::Call(
+  parse("a(1);", vec![Stmt::ExprStmt(Expr::Call(
     "a".to_string(),
     VecDeque::from([Expr::IntLiteral(1)])
   ))]);
 
-  parse("a(1, 1,)", vec![Stmt::ExprStmt(Expr::Call(
+  parse("a(1, 1,);", vec![Stmt::ExprStmt(Expr::Call(
     "a".to_string(),
     VecDeque::from([Expr::IntLiteral(1), Expr::IntLiteral(1)])
   ))]);
@@ -296,7 +296,7 @@ fn function_declaration_and_return() {
 
 #[test]
 fn closure() {
-  parse("let main = fn (a: i8) {\nreturn a;\n}", vec![
+  parse("let main = fn (a: i8) {\nreturn a;\n};", vec![
     Stmt::Declaration(
       "main".to_string(),
       Expr::Closure(
@@ -309,7 +309,7 @@ fn closure() {
 
 #[test]
 fn if_parse() {
-  parse("if true { 1 + 1; }", vec![Stmt::ExprStmt(Expr::If(
+  parse("if true { 1 + 1; };", vec![Stmt::ExprStmt(Expr::If(
     VecDeque::from([(
       Some(Expr::BooleanLiteral(true)),
       VecDeque::from([Stmt::ExprStmt(Expr::Op(
@@ -320,7 +320,7 @@ fn if_parse() {
     )])
   ))]);
 
-  parse("if true { 1 + 1; } else if true { 1 + 1; };", vec![
+  parse("if true { 1 + 1; } else if true { 1 + 1; }", vec![
     Stmt::ExprStmt(Expr::If(VecDeque::from([
       (
         Some(Expr::BooleanLiteral(true)),
@@ -341,7 +341,7 @@ fn if_parse() {
     ]))),
   ]);
 
-  parse("if true { 1 + 1; } else { 1 + 1; };", vec![Stmt::ExprStmt(
+  parse("if true { 1 + 1; } else { 1 + 1; }", vec![Stmt::ExprStmt(
     Expr::If(VecDeque::from([
       (
         Some(Expr::BooleanLiteral(true)),

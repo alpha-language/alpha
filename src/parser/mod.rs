@@ -56,20 +56,35 @@ impl<'i> Parser<'i> {
           self.generate_unexpected(token?, token_kind)
         },
 
-      None => return Err(Error::from_kind(ErrorKind::EOF))
+      None => self.generate_expected(token_kind)
     }
   }
 
   /// COLLECT
   fn collect_statements(&mut self) -> Result<'i, VecDeque<ast::Stmt>> {
     let mut list = VecDeque::new();
-    list.push_back(self.collect_statement()?);
 
-    while let Ok(()) = self.eat(token::TokenKind::Semicolon) {
-      let statement = self.collect_statement()?;
+    loop {
+      if let None = self.current_token {
+        break
+      }
 
-      if statement != ast::Stmt::None {
-        list.push_back(statement);
+      let statement = match self.collect_statement() {
+        Err(e) if e.kind() == &ErrorKind::EOF => break,
+        stmt => stmt?
+      };
+
+      if statement != ast::Stmt::None && statement != ast::Stmt::ExprStmt(ast::Expr::None) {
+        list.push_back(statement.clone());
+      }
+
+      match statement {
+        ast::Stmt::Function(_, _, _) | ast::Stmt::While(_, _) | ast::Stmt::For(_, _, _) => continue,
+        ast::Stmt::ExprStmt(expr) => match expr {
+          ast::Expr::If(_) | ast::Expr::Block(_) => continue,
+          _ => self.eat(token::TokenKind::Semicolon)?
+        },
+        _ => self.eat(token::TokenKind::Semicolon)?
       }
     }
 
@@ -83,6 +98,7 @@ impl<'i> Parser<'i> {
         token::TokenKind::Fn => self.collect_fn_decl(),
         token::TokenKind::While => self.collect_while(),
         token::TokenKind::For => self.collect_for(),
+        token::TokenKind::Semicolon => Ok(ast::Stmt::None),
         token::TokenKind::Return => {
           self.eat(token::TokenKind::Return)?;
           Ok(ast::Stmt::Return(self.collect_expr()?))
@@ -91,7 +107,6 @@ impl<'i> Parser<'i> {
       }
     }
 
-    self.bump();
     Ok(ast::Stmt::None)
   }
 
@@ -189,6 +204,7 @@ impl<'i> Parser<'i> {
         None => ()
       };
     }
+    self.eat(token::TokenKind::CloseParen)?;
 
     Ok(ast::Expr::Call(name.to_string(), args))
   }
@@ -215,12 +231,12 @@ impl<'i> Parser<'i> {
         _ => return self.generate_expected(token::TokenKind::OpenBracket)
       }));
 
-      match condition {
-        Some(_) => match self.see(token::TokenKind::Else) {
+      match (condition, self.current_token) {
+        (Some(_), Some(_)) => match self.see(token::TokenKind::Else) {
           Ok(_) => continue,
           Err(_) => break Ok(ast::Expr::If(conditions))
         },
-        None => break Ok(ast::Expr::If(conditions))
+        _ => break Ok(ast::Expr::If(conditions))
       }
     }
   }
@@ -262,15 +278,7 @@ impl<'i> Parser<'i> {
   }
 
   fn collect_expr(&mut self) -> Result<'i, ast::Expr> {
-    let result = match self.current_token {
-      Some(token) => match token?.kind() {
-        &token::TokenKind::OpenBrace => self.collect_block(),
-        _ => self.collect_comparator()
-      },
-      None => Ok(ast::Expr::None)
-    };
-    self.bump();
-    result
+    self.collect_comparator()
   }
 
   fn collect_block(&mut self) -> Result<'i, ast::Expr> {
@@ -279,11 +287,13 @@ impl<'i> Parser<'i> {
     let mut list = VecDeque::new();
 
     loop {
-      let statement = self.collect_statement()?;
+      let statement = match self.collect_statement() {
+        Err(e) if e.kind() == &ErrorKind::EOF => break,
+        stmt => stmt?
+      };
 
-      if statement != ast::Stmt::None {
-        list.push_back(statement);
-        self.eat(token::TokenKind::Semicolon)?;
+      if statement != ast::Stmt::None && statement != ast::Stmt::ExprStmt(ast::Expr::None) {
+        list.push_back(statement.clone());
       }
 
       match self.current_token {
@@ -292,8 +302,17 @@ impl<'i> Parser<'i> {
             break
           },
 
-        _ => continue
+        None => break
       };
+
+      match statement {
+        ast::Stmt::Function(_, _, _) | ast::Stmt::While(_, _) | ast::Stmt::For(_, _, _) => continue,
+        ast::Stmt::ExprStmt(ref expr) => match expr {
+          ast::Expr::If(_) | ast::Expr::Block(_) => continue,
+          _ => self.eat(token::TokenKind::Semicolon)?
+        },
+        _ => self.eat(token::TokenKind::Semicolon)?
+      }
     }
     self.eat(token::TokenKind::CloseBrace)?;
 
@@ -303,10 +322,9 @@ impl<'i> Parser<'i> {
   fn collect_binary(&mut self) -> Result<'i, ast::Expr> {
     let mut expr = self.collect_litteral()?;
 
-    while let Some(token) = self.lookahead_token {
+    while let Some(token) = self.current_token {
       expr = match token?.kind() {
         &token::TokenKind::Amp => {
-          self.bump();
           self.eat(token::TokenKind::Amp)?;
           ast::Expr::Op(
             ast::Op::BineryAnd,
@@ -315,7 +333,6 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::Pipe => {
-          self.bump();
           self.eat(token::TokenKind::Pipe)?;
           ast::Expr::Op(
             ast::Op::BineryOr,
@@ -333,10 +350,9 @@ impl<'i> Parser<'i> {
   fn collect_factor(&mut self) -> Result<'i, ast::Expr> {
     let mut expr = self.collect_binary()?;
 
-    while let Some(token) = self.lookahead_token {
+    while let Some(token) = self.current_token {
       expr = match token?.kind() {
         &token::TokenKind::Star => {
-          self.bump();
           self.eat(token::TokenKind::Star)?;
           ast::Expr::Op(
             ast::Op::Multiply,
@@ -345,7 +361,6 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::Slash => {
-          self.bump();
           self.eat(token::TokenKind::Slash)?;
           ast::Expr::Op(
             ast::Op::Divide,
@@ -354,7 +369,6 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::Percent => {
-          self.bump();
           self.eat(token::TokenKind::Percent)?;
           ast::Expr::Op(
             ast::Op::ModDiv,
@@ -372,10 +386,9 @@ impl<'i> Parser<'i> {
   fn collect_term(&mut self) -> Result<'i, ast::Expr> {
     let mut expr = self.collect_factor()?;
 
-    while let Some(token) = self.lookahead_token {
+    while let Some(token) = self.current_token {
       expr = match token?.kind() {
         &token::TokenKind::Plus => {
-          self.bump();
           self.eat(token::TokenKind::Plus)?;
           ast::Expr::Op(
             ast::Op::Add,
@@ -384,7 +397,6 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::Minus => {
-          self.bump();
           self.eat(token::TokenKind::Minus)?;
           ast::Expr::Op(
             ast::Op::Subtract,
@@ -402,15 +414,13 @@ impl<'i> Parser<'i> {
   fn collect_comparator(&mut self) -> Result<'i, ast::Expr> {
     let mut expr = self.collect_term()?;
 
-    while let Some(token) = self.lookahead_token {
+    while let Some(token) = self.current_token {
       expr = match token?.kind() {
         &token::TokenKind::In => {
-          self.bump();
           self.eat(token::TokenKind::In)?;
           ast::Expr::Op(ast::Op::In, Box::new(expr), Box::new(self.collect_term()?))
         },
         &token::TokenKind::Equals => {
-          self.bump();
           self.eat(token::TokenKind::Equals)?;
           ast::Expr::Op(
             ast::Op::Equals,
@@ -419,7 +429,6 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::NotEqual => {
-          self.bump();
           self.eat(token::TokenKind::NotEqual)?;
           ast::Expr::Op(
             ast::Op::NotEquals,
@@ -428,7 +437,6 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::Greater => {
-          self.bump();
           self.eat(token::TokenKind::Greater)?;
           ast::Expr::Op(
             ast::Op::GreaterThan,
@@ -437,7 +445,6 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::GreaterEqual => {
-          self.bump();
           self.eat(token::TokenKind::GreaterEqual)?;
           ast::Expr::Op(
             ast::Op::GreaterEquals,
@@ -446,7 +453,6 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::Less => {
-          self.bump();
           self.eat(token::TokenKind::Less)?;
           ast::Expr::Op(
             ast::Op::LessThan,
@@ -455,7 +461,6 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::LessEqual => {
-          self.bump();
           self.eat(token::TokenKind::LessEqual)?;
           ast::Expr::Op(
             ast::Op::LessEquals,
@@ -464,12 +469,10 @@ impl<'i> Parser<'i> {
           )
         },
         &token::TokenKind::And => {
-          self.bump();
           self.eat(token::TokenKind::And)?;
           ast::Expr::Op(ast::Op::And, Box::new(expr), Box::new(self.collect_term()?))
         },
         &token::TokenKind::Or => {
-          self.bump();
           self.eat(token::TokenKind::Or)?;
           ast::Expr::Op(ast::Op::Or, Box::new(expr), Box::new(self.collect_term()?))
         },
@@ -483,26 +486,51 @@ impl<'i> Parser<'i> {
   fn collect_litteral(&mut self) -> Result<'i, ast::Expr> {
     Ok(match self.current_token {
       Some(token) => match token?.kind() {
-        &token::TokenKind::Char(v) => ast::Expr::CharLiteral(v.to_string()),
-        &token::TokenKind::String(v) => ast::Expr::StringLiteral(v.to_string()),
-        &token::TokenKind::Int(v) => ast::Expr::IntLiteral(v),
-        &token::TokenKind::Float(v) => ast::Expr::FloatLiteral(v),
+        &token::TokenKind::Char(v) => {
+          self.eat(token::TokenKind::Char(""))?;
+          ast::Expr::CharLiteral(v.to_string())
+        },
+        &token::TokenKind::String(v) => {
+          self.eat(token::TokenKind::String(""))?;
+          ast::Expr::StringLiteral(v.to_string())
+        },
+        &token::TokenKind::Int(v) => {
+          self.eat(token::TokenKind::Int(0))?;
+          ast::Expr::IntLiteral(v)
+        },
+        &token::TokenKind::Float(v) => {
+          self.eat(token::TokenKind::Float(0.))?;
+          ast::Expr::FloatLiteral(v)
+        },
         &token::TokenKind::ID(name) => match self.lookahead_token {
           Some(next_token) => match next_token?.kind() {
             &token::TokenKind::Equal => self.collect_var_assignment()?,
             &token::TokenKind::OpenParen => self.collect_fn_call()?,
-            _ => ast::Expr::Identifier(name.to_string())
+            _ => {
+              self.eat(token::TokenKind::ID(""))?;
+              ast::Expr::Identifier(name.to_string())
+            }
           },
-          _ => ast::Expr::Identifier(name.to_string())
+          _ => {
+            self.eat(token::TokenKind::ID(""))?;
+            ast::Expr::Identifier(name.to_string())
+          }
         },
-        &token::TokenKind::True => ast::Expr::BooleanLiteral(true),
-        &token::TokenKind::False => ast::Expr::BooleanLiteral(false),
+        &token::TokenKind::True => {
+          self.eat(token::TokenKind::True)?;
+          ast::Expr::BooleanLiteral(true)
+        },
+        &token::TokenKind::False => {
+          self.eat(token::TokenKind::False)?;
+          ast::Expr::BooleanLiteral(false)
+        },
         &token::TokenKind::If => self.collect_if()?,
         &token::TokenKind::Fn => self.collect_closure()?,
+        &token::TokenKind::OpenBrace => self.collect_block()?,
         &token::TokenKind::OpenParen => {
           self.eat(token::TokenKind::OpenParen)?;
           let expr = self.collect_expr()?;
-          self.see(token::TokenKind::CloseParen)?;
+          self.eat(token::TokenKind::CloseParen)?;
           expr
         },
         &token::TokenKind::Minus => {
