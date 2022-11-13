@@ -208,6 +208,12 @@ impl<'f> Transpiler for Formator<'f> {
               self.transpile_operation(op),
               self.transpile_expression(right.as_ref())
             ),
+            (a, b) if b - a == 0 && b > 0 => format!(
+              "({}) {} ({})",
+              self.transpile_expression(left.as_ref()),
+              self.transpile_operation(op),
+              self.transpile_expression(right.as_ref())
+            ),
             _ => format!(
               "{} {} {}",
               self.transpile_expression(left.as_ref()),
