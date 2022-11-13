@@ -17,7 +17,30 @@ pub enum Op {
   Multiply,
   Divide,
   ModDiv,
-  In
+  In,
+  Dot
+}
+
+impl Op {
+  pub fn priority(&self) -> i8 {
+    match self {
+      &Self::BineryAnd | &Self::BineryOr | &Self::Dot => 1,
+
+      &Self::Multiply | &Self::Divide | &Self::ModDiv => 2,
+
+      &Self::Add | &Self::Subtract => 3,
+
+      &Self::In
+      | &Self::Equals
+      | &Self::NotEquals
+      | &Self::GreaterThan
+      | &Self::GreaterEquals
+      | &Self::LessThan
+      | &Self::LessEquals
+      | &Self::And
+      | &Self::Or => 4
+    }
+  }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -35,9 +58,9 @@ pub enum Expr {
   CharLiteral(String),
   BooleanLiteral(bool),
 
-  Assign(String, Box<Expr>),
-  Call(String, VecDeque<Expr>),
-  Closure(VecDeque<(String, String)>, VecDeque<Stmt>),
+  Assign(Box<Expr>, Box<Expr>),
+  Call(Box<Expr>, VecDeque<Expr>),
+  Closure(VecDeque<(String, Box<Expr>)>, VecDeque<Stmt>),
   Block(VecDeque<Stmt>),
   If(VecDeque<(Option<Expr>, VecDeque<Stmt>)>),
 
@@ -47,11 +70,20 @@ pub enum Expr {
   None
 }
 
+impl Expr {
+  pub fn op_priority(&self) -> i8 {
+    match self {
+      Self::Op(op, _, _) => op.priority(),
+      _ => -1
+    }
+  }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Stmt {
   Return(Expr),
   ExprStmt(Expr),
-  Function(String, VecDeque<(String, String)>, VecDeque<Stmt>),
+  Function(String, VecDeque<(String, Box<Expr>)>, VecDeque<Stmt>),
   Declaration(String, Expr),
   While(Expr, VecDeque<Stmt>),
   For(String, Expr, VecDeque<Stmt>),

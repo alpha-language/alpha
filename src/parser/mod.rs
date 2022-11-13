@@ -113,14 +113,7 @@ impl<'i> Parser<'i> {
   fn collect_var_def(&mut self) -> Result<'i, ast::Stmt> {
     self.eat(token::TokenKind::Let)?;
 
-    let name = match self.current_token {
-      Some(token) => match token?.kind() {
-        &token::TokenKind::ID(name) => name,
-        _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
-      },
-      None => return self.generate_expected(token::TokenKind::ID("abc"))
-    };
-    self.bump();
+    let name = self.collect_id()?;
 
     self.eat(token::TokenKind::Equal)?;
 
@@ -130,20 +123,13 @@ impl<'i> Parser<'i> {
   }
 
   fn collect_var_assignment(&mut self) -> Result<'i, ast::Expr> {
-    let name = match self.current_token {
-      Some(token) => match token?.kind() {
-        &token::TokenKind::ID(name) => name,
-        _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
-      },
-      None => return self.generate_expected(token::TokenKind::ID("abc"))
-    };
-    self.bump();
+    let name = self.collect_expr()?;
 
     self.eat(token::TokenKind::Equal)?;
 
     let value = self.collect_expr()?;
 
-    Ok(ast::Expr::Assign(name.to_string(), Box::new(value)))
+    Ok(ast::Expr::Assign(Box::new(name), Box::new(value)))
   }
 
   fn collect_fn_decl(&mut self) -> Result<'i, ast::Stmt> {
@@ -169,14 +155,7 @@ impl<'i> Parser<'i> {
   }
 
   fn collect_fn_call(&mut self) -> Result<'i, ast::Expr> {
-    let name = match self.current_token {
-      Some(token) => match token?.kind() {
-        &token::TokenKind::ID(name) => name,
-        _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
-      },
-      None => return self.generate_expected(token::TokenKind::ID("abc"))
-    };
-    self.bump();
+    let name = self.collect_expr()?;
 
     let mut args = VecDeque::new();
 
@@ -206,7 +185,7 @@ impl<'i> Parser<'i> {
     }
     self.eat(token::TokenKind::CloseParen)?;
 
-    Ok(ast::Expr::Call(name.to_string(), args))
+    Ok(ast::Expr::Call(Box::new(name), args))
   }
 
   fn collect_if(&mut self) -> Result<'i, ast::Expr> {
@@ -336,6 +315,14 @@ impl<'i> Parser<'i> {
           self.eat(token::TokenKind::Pipe)?;
           ast::Expr::Op(
             ast::Op::BineryOr,
+            Box::new(expr),
+            Box::new(self.collect_litteral()?)
+          )
+        },
+        &token::TokenKind::Dot => {
+          self.eat(token::TokenKind::Dot)?;
+          ast::Expr::Op(
+            ast::Op::Dot,
             Box::new(expr),
             Box::new(self.collect_litteral()?)
           )
@@ -548,6 +535,20 @@ impl<'i> Parser<'i> {
     })
   }
 
+  fn collect_id(&mut self) -> Result<'i, String> {
+    let id = match self.current_token {
+      Some(token) => match token?.kind() {
+        &token::TokenKind::ID(name) => name.to_string(),
+        _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
+      },
+      None => return self.generate_expected(token::TokenKind::ID("abc"))
+    };
+
+    self.bump();
+
+    Ok(id)
+  }
+
   fn collect_closure(&mut self) -> Result<'i, ast::Expr> {
     self.eat(token::TokenKind::Fn)?;
 
@@ -561,7 +562,7 @@ impl<'i> Parser<'i> {
     }))
   }
 
-  fn collect_args(&mut self) -> Result<'i, VecDeque<(String, String)>> {
+  fn collect_args(&mut self) -> Result<'i, VecDeque<(String, Box<ast::Expr>)>> {
     let mut args = VecDeque::new();
 
     self.eat(token::TokenKind::OpenParen)?;
@@ -572,16 +573,9 @@ impl<'i> Parser<'i> {
           &token::TokenKind::ID(name) => {
             self.bump();
             self.eat(token::TokenKind::Colon)?;
-            let r#type = match self.current_token {
-              Some(token) => match token?.kind() {
-                &token::TokenKind::ID(t) => t,
-                _ => return self.generate_unexpected(token?, token::TokenKind::ID("abc"))
-              },
-              None => return self.generate_expected(token::TokenKind::ID("abc"))
-            };
-            self.bump();
+            let r#type = self.collect_expr()?;
 
-            args.push_back((name.to_string(), r#type.to_string()));
+            args.push_back((name.to_string(), Box::new(r#type)));
           },
           _ => self.eat(token::TokenKind::ID("abc"))?
         },

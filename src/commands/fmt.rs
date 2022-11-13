@@ -49,7 +49,7 @@ impl<'f> Transpiler for Formator<'f> {
             "fn {name}({}) {{\n{}}}\n",
             args
               .iter()
-              .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
+              .map(|(arg, r#type)| format!("{}: {}", arg, self.transpile_expression(&r#type)))
               .collect::<Vec<_>>()
               .join(", "),
             self.transpile_statements(body)
@@ -59,7 +59,7 @@ impl<'f> Transpiler for Formator<'f> {
             "fn {name}({}) {{}}\n",
             args
               .iter()
-              .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
+              .map(|(arg, r#type)| format!("{}: {}", arg, self.transpile_expression(&r#type)))
               .collect::<Vec<_>>()
               .join(", "),
           )
@@ -68,7 +68,7 @@ impl<'f> Transpiler for Formator<'f> {
         r
       },
       ast::Stmt::Declaration(name, expr) =>
-        format!("let {name} = {};\n", self.transpile_expression(expr)),
+        format!("let {} = {};\n", name, self.transpile_expression(expr)),
       ast::Stmt::ExprStmt(expr) => format!("{}{}\n", self.transpile_expression(expr), match expr {
         ast::Expr::If(_) | ast::Expr::Block(_) => "",
         _ => ";"
@@ -109,8 +109,11 @@ impl<'f> Transpiler for Formator<'f> {
       ast::Expr::FloatLiteral(f) => format!("{f}"),
       ast::Expr::Identifier(name) => format!("{name}"),
 
-      ast::Expr::Assign(name, expr) =>
-        format!("{name} = {}", self.transpile_expression(expr.as_ref())),
+      ast::Expr::Assign(name, expr) => format!(
+        "{} = {}",
+        self.transpile_expression(name.as_ref()),
+        self.transpile_expression(expr.as_ref())
+      ),
       ast::Expr::Block(body) => {
         self.indent += 1;
         let r = format!(
@@ -122,7 +125,8 @@ impl<'f> Transpiler for Formator<'f> {
         r
       },
       ast::Expr::Call(func, args) => format!(
-        "{func}({})",
+        "{}({})",
+        self.transpile_expression(&func),
         args
           .iter()
           .map(|expr| self.transpile_expression(expr))
@@ -136,7 +140,7 @@ impl<'f> Transpiler for Formator<'f> {
             "fn ({}){{\n{}{}}}\n",
             args
               .iter()
-              .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
+              .map(|(arg, r#type)| format!("{}: {}", arg, self.transpile_expression(&r#type)))
               .collect::<Vec<_>>()
               .join(", "),
             self.transpile_statements(body),
@@ -147,7 +151,7 @@ impl<'f> Transpiler for Formator<'f> {
             "fn ({}){{}}\n",
             args
               .iter()
-              .map(|(arg, r#type)| format!("{}: {}", arg, r#type))
+              .map(|(arg, r#type)| format!("{}: {}", arg, self.transpile_expression(&r#type)))
               .collect::<Vec<_>>()
               .join(", "),
           )
@@ -189,12 +193,29 @@ impl<'f> Transpiler for Formator<'f> {
 
         result
       },
-      ast::Expr::Op(op, left, right) => format!(
-        "{} {} {}",
-        self.transpile_expression(left.as_ref()),
-        self.transpile_operation(op),
-        self.transpile_expression(right.as_ref())
-      ),
+      ast::Expr::Op(op, left, right) =>
+        if op == &ast::Op::Dot {
+          format!(
+            "{}.{}",
+            self.transpile_expression(left.as_ref()),
+            self.transpile_expression(right.as_ref())
+          )
+        } else {
+          match (left.op_priority(), right.op_priority()) {
+            (a, b) if b - a < 0 => format!(
+              "({}) {} {}",
+              self.transpile_expression(left.as_ref()),
+              self.transpile_operation(op),
+              self.transpile_expression(right.as_ref())
+            ),
+            _ => format!(
+              "{} {} {}",
+              self.transpile_expression(left.as_ref()),
+              self.transpile_operation(op),
+              self.transpile_expression(right.as_ref())
+            )
+          }
+        },
       ast::Expr::UnaryOp(unaryop, right) => format!(
         "{}{}",
         self.transpile_unary(unaryop),
@@ -221,7 +242,8 @@ impl<'f> Transpiler for Formator<'f> {
       ast::Op::Multiply => "*".into(),
       ast::Op::Divide => "/".into(),
       ast::Op::ModDiv => "%".into(),
-      ast::Op::In => "in".into()
+      ast::Op::In => "in".into(),
+      ast::Op::Dot => ".".into()
     }
   }
 
